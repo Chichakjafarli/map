@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Faylını Yükləyin</title>
+</head>
+<body>
+    <h1>Excel Faylını Yükləyin</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="file">Excel Faylını Yükləyin:</label>
+        <input type="file" name="file" id="file" accept=".xlsx, .xls" required>
+        <button type="submit">Yüklə</button>
+    </form>
+</body>
+</html>

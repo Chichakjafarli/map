@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visit Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: slideDown 1s ease-in-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .header h1 {
+            color: #4CAF50;
+            font-size: 2.8rem;
+            margin: 0;
+            font-weight: bold;
+            padding: 15px;
+            border: 3px solid #4CAF50;
+            border-radius: 10px;
+            display: inline-block;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .header h1:hover {
+            transform: scale(1.05);
+        }
+
+        .top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .file-upload-container, .filters {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .file-upload-container:hover, .filters:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .file-upload-container label {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .file-upload-container label:hover {
+            background-color: #45a049;
+        }
+
+        .file-upload-container input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-container button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .file-upload-container button:hover {
+            background-color: #45a049;
+        }
+
+        .filters select, .filters input[type="text"] {
+            padding: 10px 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 200px;
+        }
+
+        .filters button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .filters button:hover {
+            background-color: #45a049;
+        }
+
+        #send-top-5 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+        }
+
+        #send-top-5:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover td {
+            background-color: #f1f1f1;
+        }
+
+        #map {
+            height: 500px;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            animation: slideUp 1.5s ease-in-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .leaflet-container {
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Visit Map</h1>
+    </div>
+
+    <div class="top-section">
+        <div class="file-upload-container">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <label for="file">Select Excel File</label>
+                <input type="file" name="file" id="file" accept=".xls,.xlsx">
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+
+        <div class="filters">
+            <form method="get" action="/dashboard/">
+                <input type="text" name="cif" placeholder="Search by CIF" value="{{ request.GET.cif }}" />
+                <select name="overdue_days">
+                    <option value="all" {% if request.GET.overdue_days == "all" %}selected{% endif %}>Overdue Days: All</option>
+                    <option value="30" {% if request.GET.overdue_days == "30" %}selected{% endif %}>30 gün və daha az</option>
+                    <option value="60" {% if request.GET.overdue_days == "60" %}selected{% endif %}>60 gün və daha az</option>
+                    <option value="90" {% if request.GET.overdue_days == "90" %}selected{% endif %}>90 gün və daha az</option>
+                </select>
+                <select name="amount">
+                    <option value="all" {% if request.GET.amount == "all" %}selected{% endif %}>Credit Amount: All</option>
+                    <option value="1000" {% if request.GET.amount == "1000" %}selected{% endif %}>1000 AZN və daha az</option>
+                    <option value="5000" {% if request.GET.amount == "5000" %}selected{% endif %}>5000 AZN və daha az</option>
+                    <option value="10000" {% if request.GET.amount == "10000" %}selected{% endif %}>10000 AZN və daha az</option>
+                </select>
+                <button type="submit">Apply</button>
+            </form>
+        </div>
+
+        <button id="send-top-5">Select priority customers and send</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>CIF</th>
+                    <th>Contract Number</th>
+                    <th>Address</th>
+                    <th>Borrower</th>
+                    <th>Location</th>
+                    <th>Region</th>
+                    <th>Region Manager</th>
+                    <th>Responsible Person</th>
+                    <th>Contact Type</th>
+                    <th>Contact Person</th>
+                    <th>Meeting Place</th>
+                    <th>Notes</th>
+                    <th>Employee Name</th>
+                    <th>Travel Date</th>
+                    <th>Month</th>
+                    <th>Amount</th>
+                    <th>Overdue Days</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                {% for visit in visits %}
+                <tr data-lat="{{ visit.latitude }}" data-lng="{{ visit.longitude }}" data-amount="{{ visit.amount }}" data-overdue="{{ visit.overdue_days }}">
+                    <td>{{ visit.cif }}</td>
+                    <td>{{ visit.contract_number }}</td>
+                    <td>{{ visit.address }}</td>
+                    <td>{{ visit.borrower }}</td>
+                    <td>{{ visit.location }}</td>
+                    <td>{{ visit.region }}</td>
+                    <td>{{ visit.region_manager }}</td>
+                    <td>{{ visit.responsible_person }}</td>
+                    <td>{{ visit.contact_type }}</td>
+                    <td>{{ visit.contact_person }}</td>
+                    <td>{{ visit.meeting_place }}</td>
+                    <td>{{ visit.notes }}</td>
+                    <td>{{ visit.employee_name }}</td>
+                    <td>{{ visit.travel_date }}</td>
+                    <td>{{ visit.month }}</td>
+                    <td>{{ visit.amount }}</td>
+                    <td>{{ visit.overdue_days }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="map"></div>
+    <script>
+        var map = L.map('map').setView([40.4093, 49.8671], 10); // Bakı koordinatları
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        var markerLayer = L.layerGroup().addTo(map);
+        var visits = [];
+        var selectedRow = null;
+
+        document.querySelectorAll('#table-body tr').forEach(row => {
+            const lat = parseFloat(row.dataset.lat);
+            const lng = parseFloat(row.dataset.lng);
+            const amount = parseFloat(row.dataset.amount);
+            const overdue = parseInt(row.dataset.overdue);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                var color;
+                if (amount > 5000 && overdue > 100) {
+                    color = "red";
+                } else if (amount > 2000 && overdue > 50) {
+                    color = "orange";
+                } else {
+                    color = "green";
+                }
+
+                const marker = L.circleMarker([lat, lng], {
+                    radius: 10,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.8
+                }).addTo(markerLayer);
+
+                marker.bindPopup(
+                    `Amount: ${amount}<br>Overdue Days: ${overdue}`
+                );
+
+                visits.push({ marker, lat, lng });
+            }
+        });
+
+        document.querySelectorAll('#table-body tr').forEach(row => {
+            row.addEventListener('click', function () {
+                const lat = parseFloat(this.dataset.lat);
+                const lng = parseFloat(this.dataset.lng);
+
+                if (selectedRow === this) {
+                    markerLayer.clearLayers();
+                    visits.forEach(v => markerLayer.addLayer(v.marker));
+                    map.setView([40.4093, 49.8671], 10);
+                    selectedRow = null;
+                } else {
+                    markerLayer.clearLayers();
+                    const color = visits.find(v => v.lat === lat && v.lng === lng).marker.options.color;
+                    L.circleMarker([lat, lng], {
+                        radius: 10,
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.8
+                    }).addTo(markerLayer).bindPopup(
+                        `Latitude: ${lat}<br>Longitude: ${lng}`
+                    ).openPopup();
+
+                    map.setView([lat, lng], 15);
+                    selectedRow = this;
+                }
+            });
+        });
+
+        // "Prioritetli Top 5 müştəriyə mail göndər" funksionallığı
+        document.getElementById('send-top-5').addEventListener('click', function () {
+            fetch('/send-top-5-emails/', { 
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',  // CSRF tokeni əlavə edin
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);  // Backend-dən gələn mesajı göstər
+            })
+            .catch(error => {
+                console.error('Error:', error);  // Xətanı konsolda göstər
+                alert('Email göndərərkən xəta baş verdi!');
+            });
+        });
+    </script>
+</body>
+</html>
