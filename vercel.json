@@ -1,0 +1,13 @@
+{
+    "builds":[{
+        "src": "VISITMAP/wsgi.py",
+        "use": "@vercel/python"
+    }],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "VISITMAP/wsgi.py"
+      }
+    ]
+  }
+  
